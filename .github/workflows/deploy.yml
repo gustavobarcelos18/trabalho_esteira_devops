@@ -13,16 +13,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Publicar no GitHub Pages
+  build:
+    name: Empacotar site
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.pages.outputs.page_url }}
     steps:
       - name: Baixar código
         uses: actions/checkout@v6
@@ -32,20 +25,34 @@ jobs:
           mkdir _site
           cp -- ./*.html ./*.css _site/
           cp -R -- imagens _site/
-      - name: Configurar Pages
-        uses: actions/configure-pages@v5
       - name: Enviar arquivos estáticos
         uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+
+  deploy:
+    name: Publicar no GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
       - name: Publicar site
         id: pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   notify:
     name: Notificar falha no Discord
-    needs: deploy
-    if: ${{ always() && needs.deploy.result == 'failure' }}
+    needs: [build, deploy]
+    if: ${{ always() && (needs.build.result == 'failure' || needs.deploy.result == 'failure') }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:
