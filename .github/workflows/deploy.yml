@@ -48,23 +48,3 @@ jobs:
       - name: Publicar site
         id: pages
         uses: actions/deploy-pages@v5
-
-  notify:
-    name: Notificar falha no Discord
-    needs: [build, deploy]
-    if: ${{ always() && (needs.build.result == 'failure' || needs.deploy.result == 'failure') }}
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Enviar aviso
-        env:
-          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          if [[ -z "$WEBHOOK" ]]; then
-            echo "::warning::Configure DISCORD_WEBHOOK_URL para receber notificações."
-            exit 0
-          fi
-          payload="$(jq -n --arg url "$EXECUCAO" '{content: ("Falha no deploy do portfólio. Execução: " + $url), allowed_mentions: {parse: []}}')"
-          curl --fail --silent --show-error --max-time 20 \
-            --output /dev/null --json "$payload" "$WEBHOOK"

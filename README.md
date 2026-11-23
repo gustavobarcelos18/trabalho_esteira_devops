@@ -7,7 +7,7 @@ Portfólio de [Gustavo Barcelos](https://github.com/gustavobarcelos18) para o tr
 
 - `index.html`, `style.css` e `imagens/` contêm os arquivos públicos.
 - [CI](.github/workflows/ci.yml) roda em pull requests para `main`. Cada job verifica primeiro o `index.html`, usa `find` para barrar arquivos acima de 500.000 bytes e verifica os termos proibidos no código do site. A matriz roda o validador HTML em Node.js 18 e 20. O script Python verifica referências de links e imagens, incluindo caminhos locais, âncoras e respostas HTTP de URLs externas. O job `CI Gate` exige o sucesso de toda a matriz.
-- [Deploy](.github/workflows/deploy.yml) publica os arquivos do site após cada push na `main`. Em caso de falha, o job de notificação usa um webhook do Discord quando o secret está configurado.
+- [Deploy](.github/workflows/deploy.yml) publica os arquivos do site após cada push na `main`. As notificações de falha são configuradas nas preferências pessoais do GitHub Actions.
 
 ## 1. Suba os arquivos e habilite o Pages
 
@@ -33,9 +33,9 @@ git -c credential.username=gustavobarcelos18 push -u origin main
 
 ## 3. Configure a notificação de falha
 
-1. Em um servidor do Discord em que você pode gerenciar webhooks, abra **Configurações do servidor → Integrações → Webhooks**, crie um webhook para o canal escolhido e copie a URL.
-2. No GitHub, abra [Settings → Secrets and variables → Actions](https://github.com/gustavobarcelos18/trabalho_esteira_devops/settings/secrets/actions). Em **New repository secret**, use o nome `DISCORD_WEBHOOK_URL` e salve a URL copiada como valor.
-3. Em falhas futuras, confira o job **Notificar falha no Discord**. A mensagem no canal inclui o link para a execução. A URL é usada diretamente pelo workflow. [Documentação do Discord](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks)
+1. Siga o [repositório do trabalho](https://github.com/gustavobarcelos18/trabalho_esteira_devops) pelo botão **Watch**.
+2. Abra as [preferências de notificações do GitHub](https://github.com/settings/notifications). Em **System → Actions**, selecione **On GitHub** para receber os avisos na caixa de entrada. Se precisar receber o aviso fora da interface, selecione também **Email** para que o próprio GitHub envie o aviso.
+3. Marque **Only notify for failed workflows** e salve. A preferência vale para as execuções que você dispara, incluindo o deploy iniciado pelo push resultante do merge. [Documentação das notificações do GitHub Actions](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications)
 
 ## 4. Convide a colaboradora e entregue
 
