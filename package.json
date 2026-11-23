@@ -1,0 +1,11 @@
+{
+  "name": "trabalho-esteira-devops",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint:html": "html-validate --max-warnings 0"
+  },
+  "devDependencies": {
+    "html-validate": "9.0.1"
+  }
+}

@@ -1,0 +1,63 @@
+name: Deploy do portfólio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Publicar no GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v6
+      - name: Preparar arquivos públicos
+        run: |
+          test -f index.html
+          mkdir _site
+          cp -- ./*.html ./*.css _site/
+          cp -R -- imagens _site/
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+      - name: Enviar arquivos estáticos
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - name: Publicar site
+        id: pages
+        uses: actions/deploy-pages@v4
+
+  notify:
+    name: Notificar falha no Discord
+    needs: deploy
+    if: ${{ always() && needs.deploy.result == 'failure' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Enviar aviso
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EXECUCAO: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [[ -z "$WEBHOOK" ]]; then
+            echo "::warning::Configure DISCORD_WEBHOOK_URL para receber notificações."
+            exit 0
+          fi
+          payload="$(jq -n --arg url "$EXECUCAO" '{content: ("Falha no deploy do portfólio. Execução: " + $url), allowed_mentions: {parse: []}}')"
+          curl --fail --silent --show-error --max-time 20 \
+            --output /dev/null --json "$payload" "$WEBHOOK"
