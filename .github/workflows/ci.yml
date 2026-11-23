@@ -1,0 +1,66 @@
+name: CI do portfólio
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Linter (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v6
+      - name: Exigir index.html na raiz
+        run: |
+          if [[ ! -f index.html ]]; then
+            echo "::error::O arquivo index.html deve existir na raiz do repositório."
+            exit 1
+          fi
+      - name: Detectar arquivos acima de 500 KB
+        run: |
+          arquivos="$(find . -path './.git' -prune -o -type f -size +500000c -print)"
+          if [[ -n "$arquivos" ]]; then
+            printf '%s\n' "$arquivos"
+            echo "::error::Há arquivos acima de 500 KB."
+            exit 1
+          fi
+      - name: Procurar termos proibidos no site
+        run: |
+          if git grep -I -l -i -E '(^|[^[:alnum:]_])(TODO|FIXME|senha|password)([^[:alnum:]_]|$)' -- '*.html' '*.css' '*.js' 'imagens/'; then
+            echo "::error::O código do site contém termos proibidos."
+            exit 1
+          else
+            status=$?
+            if [[ "$status" -ne 1 ]]; then exit "$status"; fi
+          fi
+      - name: Preparar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Instalar dependências
+        run: npm ci --no-audit --no-fund
+      - name: Validar HTML
+        run: |
+          find . \( -path './.git' -o -path './node_modules' \) -prune -o \
+            -type f -name '*.html' -print0 | xargs -0 npm run lint:html --
+      - name: Verificar links e imagens
+        run: python3 scripts/verificar-links.py
+
+  gate:
+    name: CI Gate
+    needs: lint
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exigir sucesso de toda a matriz
+        env:
+          RESULTADO: ${{ needs.lint.result }}
+        run: test "$RESULTADO" = success
